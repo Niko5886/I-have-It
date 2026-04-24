@@ -1,20 +1,37 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { AppLayout } from './components/layout/AppLayout';
+import { ProtectedRoute } from './components/routing/ProtectedRoute';
+import { BrowseListingsPage } from './pages/BrowseListingsPage';
+import { CreateListingPage } from './pages/CreateListingPage';
+import { EditListingPage } from './pages/EditListingPage';
+import { HomePage } from './pages/HomePage';
+import { ListingDetailsPage } from './pages/ListingDetailsPage';
+import { LoginPage } from './pages/LoginPage';
+import { MyListingsPage } from './pages/MyListingsPage';
+import { NotFoundPage } from './pages/NotFoundPage';
+import { RegisterPage } from './pages/RegisterPage';
 
 function App() {
   return (
-    <Router>
-      <div className="flex flex-col min-h-screen">
-        <header className="p-4 bg-white shadow flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-green-600">I have It</h1>
-        </header>
+    <BrowserRouter>
+      <Routes>
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/listings" element={<BrowseListingsPage />} />
+          <Route path="/listing/:id" element={<ListingDetailsPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
 
-        <main className="flex-1 p-4">
-          <Routes>
-            <Route path="/" element={<h2 className="text-xl">Добре дошли в I have It</h2>} />
-          </Routes>
-        </main>
-      </div>
-    </Router>
+          <Route element={<ProtectedRoute />}>
+            <Route path="/my-listings" element={<MyListingsPage />} />
+            <Route path="/create" element={<CreateListingPage />} />
+            <Route path="/edit/:id" element={<EditListingPage />} />
+          </Route>
+
+          <Route path="*" element={<NotFoundPage />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   );
 }
 
