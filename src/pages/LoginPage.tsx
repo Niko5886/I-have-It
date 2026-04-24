@@ -7,13 +7,20 @@ export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = useState('demo@ihaveit.app');
+  const [error, setError] = useState('');
 
   const from = (location.state as { from?: string } | null)?.from ?? '/my-listings';
 
-  const handleSubmit = (event: FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    login(email);
-    navigate(from, { replace: true });
+    setError('');
+
+    try {
+      await login(email);
+      navigate(from, { replace: true });
+    } catch {
+      setError('Неуспешен login. Провери email и password.');
+    }
   };
 
   return (
@@ -43,6 +50,8 @@ export function LoginPage() {
           Login
         </button>
       </form>
+
+      {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
 
       <p className="mt-4 text-sm text-gray-600">
         Нямаш акаунт?{' '}

@@ -7,11 +7,18 @@ export function RegisterPage() {
   const navigate = useNavigate();
   const [name, setName] = useState('Demo User');
   const [email, setEmail] = useState('demo@ihaveit.app');
+  const [error, setError] = useState('');
 
-  const handleSubmit = (event: FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    register(name, email);
-    navigate('/my-listings', { replace: true });
+    setError('');
+
+    try {
+      await register(name, email);
+      navigate('/my-listings', { replace: true });
+    } catch {
+      setError('Неуспешна регистрация. Опитай отново.');
+    }
   };
 
   return (
@@ -55,6 +62,8 @@ export function RegisterPage() {
           Register
         </button>
       </form>
+
+      {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
 
       <p className="mt-4 text-sm text-gray-600">
         Вече имаш акаунт?{' '}

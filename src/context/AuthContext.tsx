@@ -1,11 +1,14 @@
 import {
   createContext,
   useCallback,
+  useEffect,
   useContext,
   useMemo,
   useState,
   type PropsWithChildren,
 } from 'react';
+import type { Session } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
 
 type AuthUser = {
   id: string;
@@ -16,56 +19,79 @@ type AuthUser = {
 type AuthContextType = {
   isAuthenticated: boolean;
   user: AuthUser | null;
-  login: (email: string) => void;
-  register: (name: string, email: string) => void;
+  login: (email: string, password?: string) => Promise<void>;
+  register: (name: string, email: string, password?: string) => Promise<void>;
   logout: () => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'i-have-it-auth';
-
-function readStoredUser(): AuthUser | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return null;
-    }
-    return JSON.parse(raw) as AuthUser;
-  } catch {
+function sessionToUser(session: Session | null): AuthUser | null {
+  if (!session?.user) {
     return null;
   }
+
+  return {
+    id: session.user.id,
+    name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
+    email: session.user.email || '',
+  };
 }
 
 export function AuthProvider({ children }: PropsWithChildren) {
-  const [user, setUser] = useState<AuthUser | null>(() => readStoredUser());
+  const [user, setUser] = useState<AuthUser | null>(null);
 
-  const saveUser = useCallback((nextUser: AuthUser | null) => {
-    setUser(nextUser);
-    if (nextUser) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser));
-      return;
-    }
-    localStorage.removeItem(STORAGE_KEY);
+  useEffect(() => {
+    let mounted = true;
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (mounted) {
+        setUser(sessionToUser(data.session));
+      }
+    });
+
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(sessionToUser(session));
+    });
+
+    return () => {
+      mounted = false;
+      subscription.subscription.unsubscribe();
+    };
   }, []);
 
   const login = useCallback(
-    (email: string) => {
-      saveUser({ id: 'user-1', name: 'Demo User', email });
+    async (email: string, password = 'pass123') => {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        throw error;
+      }
+      setUser(sessionToUser(data.session));
     },
-    [saveUser],
+    [],
   );
 
   const register = useCallback(
-    (name: string, email: string) => {
-      saveUser({ id: 'user-1', name, email });
+    async (name: string, email: string, password = 'pass123') => {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { name },
+        },
+      });
+      if (error) {
+        throw error;
+      }
+      setUser(sessionToUser(data.session));
     },
-    [saveUser],
+    [],
   );
 
-  const logout = useCallback(() => {
-    saveUser(null);
-  }, [saveUser]);
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+  }, []);
 
   const value = useMemo(
     () => ({
