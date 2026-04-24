@@ -1,8 +1,8 @@
-import type { Listing } from '../../types/listing';
+import type { ListingWithPhotos } from '../../types/listing';
 import { ListingCard } from './ListingCard';
 
 type ListingGridProps = {
-  listings: Listing[];
+  listings: ListingWithPhotos[];
   emptyText?: string;
 };
 
